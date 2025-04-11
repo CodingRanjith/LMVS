@@ -81,7 +81,46 @@
   </header>
 
   <main class="main">
+    <section id="result" class="section">
+      <div class="container">
+        <h2 class="text-center mb-4">Patient Results</h2>
+    
+        <table class="table table-bordered">
+          <thead>
+            <tr>
+              <th>Name</th><th>DOB</th><th>Age</th><th>Sex</th><th>Email</th>
+              <th>Cell</th><th>IOP Range</th><th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="resultTableBody"></tbody>
+          
+        </table>
+    
+        <canvas id="iopChart" height="100"></canvas>
+      </div>
+    </section>
 
+  <!-- Patient Details Modal -->
+<div class="modal fade" id="patientModal" tabindex="-1" aria-labelledby="patientModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+
+      <div class="modal-header">
+        <h5 class="modal-title" id="patientModalLabel">Patient Details</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+
+      <div class="modal-body">
+        <div id="patientDetails" class="mb-4"></div>
+        <canvas id="individualChart" height="100"></canvas>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+    
   </main>
 
 <footer id="footer" class="footer light-background">
@@ -99,6 +138,122 @@
 
 <!-- Preloader -->
 <div id="preloader"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+  const patients = JSON.parse(localStorage.getItem("patients")) || [];
+  const tbody = document.getElementById("resultTableBody");
+
+  // Populate table with patient rows
+  patients.forEach((p, index) => {
+    const row = `
+      <tr>
+        <td>${p.name}</td>
+        <td>${p.dob}</td>
+        <td>${p.age}</td>
+        <td>${p.sex}</td>
+        <td>${p.email}</td>
+        <td>${p.cell}</td>
+        <td>${p.iop}</td>
+        <td>
+          <button class="btn btn-sm btn-primary" onclick="showDetails(${index})" data-bs-toggle="modal" data-bs-target="#patientModal">
+            View
+          </button>
+        </td>
+      </tr>
+    `;
+    tbody.innerHTML += row;
+  });
+
+  let individualChart; // To hold chart instance for modal
+
+  function showDetails(index) {
+    const p = patients[index];
+
+    // Set HTML content
+    const detailsHTML = `
+      <p><strong>Name:</strong> ${p.name}</p>
+      <p><strong>Date of Birth:</strong> ${p.dob}</p>
+      <p><strong>Age:</strong> ${p.age}</p>
+      <p><strong>Sex:</strong> ${p.sex}</p>
+      <p><strong>Email:</strong> ${p.email}</p>
+      <p><strong>Address:</strong> ${p.address || 'N/A'}</p>
+      <p><strong>Cell:</strong> ${p.cell}</p>
+      <p><strong>Work Phone:</strong> ${p.work || 'N/A'}</p>
+      <p><strong>Authorized Contact:</strong> ${p.authorized || 'N/A'}</p>
+      <p><strong>IOP Range:</strong> ${p.iop}</p>
+    `;
+    document.getElementById("patientDetails").innerHTML = detailsHTML;
+
+    // Destroy previous chart
+    if (individualChart) individualChart.destroy();
+
+    // Prepare chart data
+    const iopData = {
+      Normal: p.iop.includes("Normal") ? 1 : 0,
+      Glaucoma: p.iop.includes("Glaucoma") ? 1 : 0,
+      Hypotony: p.iop.includes("Hypotony") ? 1 : 0
+    };
+
+    // Draw chart inside modal
+    const ctx = document.getElementById("individualChart").getContext("2d");
+    individualChart = new Chart(ctx, {
+      type: "bar",
+      data: {
+        labels: ["Normal", "Glaucoma", "Hypotony"],
+        datasets: [{
+          label: "IOP Classification",
+          data: [iopData.Normal, iopData.Glaucoma, iopData.Hypotony],
+          backgroundColor: ["#198754", "#ffc107", "#dc3545"]
+        }]
+      },
+      options: {
+        responsive: true,
+        plugins: { legend: { display: false } },
+        scales: {
+          y: {
+            beginAtZero: true,
+            ticks: { stepSize: 1, precision: 0 }
+          }
+        }
+      }
+    });
+  }
+
+  // Draw main summary chart at bottom of page
+  const iopCounts = { Normal: 0, Glaucoma: 0, Hypotony: 0 };
+  patients.forEach(p => {
+    if (p.iop.includes("Normal")) iopCounts.Normal++;
+    if (p.iop.includes("Glaucoma")) iopCounts.Glaucoma++;
+    if (p.iop.includes("Hypotony")) iopCounts.Hypotony++;
+  });
+
+  new Chart(document.getElementById("iopChart").getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: ["Normal", "Glaucoma", "Hypotony"],
+      datasets: [{
+        label: "Patient IOP Summary",
+        data: [iopCounts.Normal, iopCounts.Glaucoma, iopCounts.Hypotony],
+        backgroundColor: ["#198754", "#ffc107", "#dc3545"]
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+      scales: {
+        y: {
+          beginAtZero: true,
+          ticks: { stepSize: 1, precision: 0 }
+        }
+      }
+    }
+  });
+</script>
+
+
+
 
 <!-- Vendor JS Files -->
 <script src="assets/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
