@@ -100,21 +100,31 @@
       </div>
     </section>
 
-  <!-- Patient Details Modal -->
+ <!-- Patient Modal -->
 <div class="modal fade" id="patientModal" tabindex="-1" aria-labelledby="patientModalLabel" aria-hidden="true">
-  <div class="modal-dialog modal-lg">
+  <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content">
-
       <div class="modal-header">
         <h5 class="modal-title" id="patientModalLabel">Patient Details</h5>
         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
       </div>
 
       <div class="modal-body">
-        <div id="patientDetails" class="mb-4"></div>
-        <canvas id="individualChart" height="100"></canvas>
+        <div class="container">
+          <div class="row gy-2" id="patientDetails">
+            <!-- JS dynamically inserts the split rows here -->
+          </div>
+
+          <hr class="my-4">
+
+          <h6 class="text-center">IOP Category Chart</h6>
+          <canvas id="individualChart" height="150"></canvas>
+        </div>
       </div>
 
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+      </div>
     </div>
   </div>
 </div>
@@ -172,19 +182,20 @@
     const p = patients[index];
 
     // Set HTML content
-    const detailsHTML = `
-      <p><strong>Name:</strong> ${p.name}</p>
-      <p><strong>Date of Birth:</strong> ${p.dob}</p>
-      <p><strong>Age:</strong> ${p.age}</p>
-      <p><strong>Sex:</strong> ${p.sex}</p>
-      <p><strong>Email:</strong> ${p.email}</p>
-      <p><strong>Address:</strong> ${p.address || 'N/A'}</p>
-      <p><strong>Cell:</strong> ${p.cell}</p>
-      <p><strong>Work Phone:</strong> ${p.work || 'N/A'}</p>
-      <p><strong>Authorized Contact:</strong> ${p.authorized || 'N/A'}</p>
-      <p><strong>IOP Range:</strong> ${p.iop}</p>
-    `;
-    document.getElementById("patientDetails").innerHTML = detailsHTML;
+    const detailRows = `
+  <div class="col-md-6"><strong>Name:</strong> ${p.name}</div>
+  <div class="col-md-6"><strong>DOB:</strong> ${p.dob}</div>
+  <div class="col-md-6"><strong>Age:</strong> ${p.age}</div>
+  <div class="col-md-6"><strong>Sex:</strong> ${p.sex}</div>
+  <div class="col-md-6"><strong>Email:</strong> ${p.email}</div>
+  <div class="col-md-6"><strong>Cell Phone:</strong> ${p.cell}</div>
+  <div class="col-md-6"><strong>Work Phone:</strong> ${p.work || 'N/A'}</div>
+  <div class="col-md-6"><strong>Address:</strong> ${p.address || 'N/A'}</div>
+  <div class="col-md-6"><strong>Authorized Person:</strong> ${p.authorized || 'N/A'}</div>
+  <div class="col-md-6"><strong>IOP Range:</strong> ${p.iop}</div>
+`;
+document.getElementById("patientDetails").innerHTML = detailRows;
+
 
     // Destroy previous chart
     if (individualChart) individualChart.destroy();
