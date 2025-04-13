@@ -209,10 +209,12 @@
           <h3 id="randomIOP" class="text-primary fw-bold"></h3>
         </div>
         <div class="text-center">
+          <button class="btn btn-outline-secondary me-2" onclick="generateRandomIOP()">🔁 Refresh</button>
           <a href="patient-detail.html" class="btn btn-primary" id="saveAndContinue">Save & Continue</a>
         </div>
       </div>
     </section>
+    
     
 
 
@@ -242,14 +244,24 @@
       { label: "Hypotony: 5–10 mmHg", code: "Hypotony" }
     ];
   
-    const selectedRange = iopRanges[Math.floor(Math.random() * iopRanges.length)];
-    document.getElementById("randomIOP").textContent = selectedRange.label;
+    let selectedRange = null;
   
-    // Save range to localStorage on continue
+    function generateRandomIOP() {
+      selectedRange = iopRanges[Math.floor(Math.random() * iopRanges.length)];
+      document.getElementById("randomIOP").textContent = selectedRange.label;
+    }
+  
+    // Initial call on page load
+    generateRandomIOP();
+  
+    // Save selected IOP to localStorage on continue
     document.getElementById("saveAndContinue").addEventListener("click", function () {
-      localStorage.setItem("selectedIOP", JSON.stringify(selectedRange));
+      if (selectedRange) {
+        localStorage.setItem("selectedIOP", JSON.stringify(selectedRange));
+      }
     });
   </script>
+  
   
 
   <!-- Vendor JS Files -->
