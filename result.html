@@ -176,128 +176,123 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
   const patients = JSON.parse(localStorage.getItem("patients")) || [];
-  const tbody = document.getElementById("resultTableBody");
-  let currentIndex = null;
-  let individualChart = null;
+const tbody = document.getElementById("resultTableBody");
+let currentIndex = null;
+let individualChart = null;
 
-  // Draw Table Rows with View Buttons
-  patients.forEach((p, index) => {
-    const row = `
-      <tr>
-        <td>${p.name}</td>
-        <td>${p.dob}</td>
-        <td>${p.age}</td>
-        <td>${p.sex}</td>
-        <td>${p.email}</td>
-        <td>${p.cell}</td>
-        <td>${p.iop}</td>
-        <td>
-          <button class="btn btn-sm btn-primary" onclick="showDetails(${index})" data-bs-toggle="modal" data-bs-target="#patientModal">
-            View
-          </button>
-          <button class="btn btn-sm btn-warning" onclick="openIOPUpdate(${index})" data-bs-toggle="modal" data-bs-target="#updateModal">Update IOP</button>
-        </td>
-      </tr>
-    `;
-    tbody.innerHTML += row;
-  });
+patients.forEach((p, index) => {
+  // Initialize iop_history if not exists
+  if (!p.iop_history) p.iop_history = [p.iop];
 
-  // Show Details Function
-  function showDetails(index) {
-    currentIndex = index;
-    const p = patients[index];
+  const row = `
+    <tr>
+      <td>${p.name}</td>
+      <td>${p.dob}</td>
+      <td>${p.age}</td>
+      <td>${p.sex}</td>
+      <td>${p.email}</td>
+      <td>${p.cell}</td>
+      <td>${p.iop}</td>
+      <td>
+        <button class="btn btn-sm btn-primary" onclick="showDetails(${index})" data-bs-toggle="modal" data-bs-target="#patientModal">View</button>
+        <button class="btn btn-sm btn-warning" onclick="openIOPUpdate(${index})" data-bs-toggle="modal" data-bs-target="#updateModal">Update IOP</button>
+      </td>
+    </tr>
+  `;
+  tbody.innerHTML += row;
+});
 
-    const html = `
-      <div class="col-md-6"><strong>Name:</strong> ${p.name}</div>
-      <div class="col-md-6"><strong>DOB:</strong> ${p.dob}</div>
-      <div class="col-md-6"><strong>Age:</strong> ${p.age}</div>
-      <div class="col-md-6"><strong>Sex:</strong> ${p.sex}</div>
-      <div class="col-md-6"><strong>Email:</strong> ${p.email}</div>
-      <div class="col-md-6"><strong>Cell:</strong> ${p.cell}</div>
-      <div class="col-md-6"><strong>Work:</strong> ${p.work || "N/A"}</div>
-      <div class="col-md-6"><strong>Address:</strong> ${p.address || "N/A"}</div>
-      <div class="col-md-6"><strong>Authorized:</strong> ${p.authorized || "N/A"}</div>
-      <div class="col-md-6"><strong>IOP Range:</strong> ${p.iop}</div>
-    `;
-    document.getElementById("patientDetails").innerHTML = html;
-  }
+function showDetails(index) {
+  currentIndex = index;
+  const p = patients[index];
+  const html = `
+    <div class="col-md-6"><strong>Name:</strong> ${p.name}</div>
+    <div class="col-md-6"><strong>DOB:</strong> ${p.dob}</div>
+    <div class="col-md-6"><strong>Age:</strong> ${p.age}</div>
+    <div class="col-md-6"><strong>Sex:</strong> ${p.sex}</div>
+    <div class="col-md-6"><strong>Email:</strong> ${p.email}</div>
+    <div class="col-md-6"><strong>Cell:</strong> ${p.cell}</div>
+    <div class="col-md-6"><strong>Work:</strong> ${p.work || "N/A"}</div>
+    <div class="col-md-6"><strong>Address:</strong> ${p.address || "N/A"}</div>
+    <div class="col-md-6"><strong>Authorized:</strong> ${p.authorized || "N/A"}</div>
+    <div class="col-md-6"><strong>IOP Range:</strong> ${p.iop}</div>
+  `;
+  document.getElementById("patientDetails").innerHTML = html;
+}
 
-  // When Modal Fully Shown → Render Chart
-  const patientModal = document.getElementById("patientModal");
-  patientModal.addEventListener("shown.bs.modal", function () {
-    const p = patients[currentIndex];
-    drawIndividualChart(p.iop);
-  });
+document.getElementById("patientModal").addEventListener("shown.bs.modal", function () {
+  const p = patients[currentIndex];
+  drawIndividualChart(p);
+});
 
-  // Draw Chart in Modal
-  function drawIndividualChart(iopLabel) {
-    const ctx = document.getElementById("individualChart").getContext("2d");
+function drawIndividualChart(p) {
+  const ctx = document.getElementById("individualChart").getContext("2d");
+  if (individualChart) individualChart.destroy();
 
-    if (individualChart) individualChart.destroy();
+  const counts = {
+    Normal: p.iop_history.filter(iop => iop.includes("Normal")).length,
+    Glaucoma: p.iop_history.filter(iop => iop.includes("Glaucoma")).length,
+    Hypotony: p.iop_history.filter(iop => iop.includes("Hypotony")).length
+  };
 
-    const iopData = {
-      Normal: iopLabel.includes("Normal") ? 1 : 0,
-      Glaucoma: iopLabel.includes("Glaucoma") ? 1 : 0,
-      Hypotony: iopLabel.includes("Hypotony") ? 1 : 0,
-    };
-
-    individualChart = new Chart(ctx, {
-      type: "bar",
-      data: {
-        labels: ["Normal", "Glaucoma", "Hypotony"],
-        datasets: [{
-          label: "IOP Classification",
-          data: [iopData.Normal, iopData.Glaucoma, iopData.Hypotony],
-          backgroundColor: ["#198754", "#ffc107", "#dc3545"]
-        }]
-      },
-      options: {
-        responsive: true,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: {
-            beginAtZero: true,
-            ticks: { stepSize: 1, precision: 0 }
-          }
-        }
-      }
-    });
-  }
-
-  // Draw Summary Chart
-  const summaryCounts = { Normal: 0, Glaucoma: 0, Hypotony: 0 };
-  patients.forEach(p => {
-    if (p.iop.includes("Normal")) summaryCounts.Normal++;
-    if (p.iop.includes("Glaucoma")) summaryCounts.Glaucoma++;
-    if (p.iop.includes("Hypotony")) summaryCounts.Hypotony++;
-  });
-
-  const ctxSummary = document.getElementById("iopChart").getContext("2d");
-  new Chart(ctxSummary, {
+  individualChart = new Chart(ctx, {
     type: "bar",
     data: {
       labels: ["Normal", "Glaucoma", "Hypotony"],
       datasets: [{
-        label: "Patient IOP Summary",
-        data: [summaryCounts.Normal, summaryCounts.Glaucoma, summaryCounts.Hypotony],
+        label: "IOP Classification History",
+        data: [counts.Normal, counts.Glaucoma, counts.Hypotony],
         backgroundColor: ["#198754", "#ffc107", "#dc3545"]
       }]
     },
     options: {
       responsive: true,
-      plugins: { legend: { display: true } },
+      plugins: { legend: { display: false } },
       scales: {
         y: {
           beginAtZero: true,
-          ticks: { stepSize: 1, precision: 0 }
+          suggestedMax: 10,
+          ticks: { stepSize: 1 }
         }
       }
     }
   });
+}
 
+// Summary Chart (based on latest reading only)
+const summaryCounts = { Normal: 0, Glaucoma: 0, Hypotony: 0 };
+patients.forEach(p => {
+  if (p.iop.includes("Normal")) summaryCounts.Normal++;
+  if (p.iop.includes("Glaucoma")) summaryCounts.Glaucoma++;
+  if (p.iop.includes("Hypotony")) summaryCounts.Hypotony++;
+});
 
+const ctxSummary = document.getElementById("iopChart").getContext("2d");
+new Chart(ctxSummary, {
+  type: "bar",
+  data: {
+    labels: ["Normal", "Glaucoma", "Hypotony"],
+    datasets: [{
+      label: "Patient IOP Summary",
+      data: [summaryCounts.Normal, summaryCounts.Glaucoma, summaryCounts.Hypotony],
+      backgroundColor: ["#198754", "#ffc107", "#dc3545"]
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { display: true } },
+    scales: {
+      y: {
+        beginAtZero: true,
+        suggestedMax: 10,
+        ticks: { stepSize: 1 }
+      }
+    }
+  }
+});
+
+// IOP Update Logic
 let selectedIOP = null;
-
 const iopRanges = [
   { label: "Normal: 11–20 mmHg", code: "Normal" },
   { label: "Glaucoma: 21–30 mmHg", code: "Glaucoma" },
@@ -309,19 +304,19 @@ function openIOPUpdate(index) {
   refreshIOP();
 }
 
-// Generate a random IOP range
 function refreshIOP() {
-  const random = iopRanges[Math.floor(Math.random() * iopRanges.length)];
-  selectedIOP = random;
-  document.getElementById("generatedIOP").textContent = random.label;
+  selectedIOP = iopRanges[Math.floor(Math.random() * iopRanges.length)];
+  document.getElementById("generatedIOP").textContent = selectedIOP.label;
 }
 
-// Submit new IOP and update chart + table
 function submitIOP() {
   if (selectedIOP && currentIndex !== null) {
-    patients[currentIndex].iop = selectedIOP.label;
+    const patient = patients[currentIndex];
+    patient.iop = selectedIOP.label;
+    if (!patient.iop_history) patient.iop_history = [];
+    patient.iop_history.push(selectedIOP.label);
     localStorage.setItem("patients", JSON.stringify(patients));
-    location.reload(); // Reload to reflect updated chart and table
+    location.reload();
   }
 }
 
